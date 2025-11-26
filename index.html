@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Simple Ring Test</title>
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <a-scene renderer="colorManagement: true; physicallyCorrectLights: true">
+        <a-assets>
+    <a-asset-item id="ring1Model" src="assets/ring1.glb"></a-asset-item>
+    <a-asset-item id="ring2Model" src="assets/ring2.glb"></a-asset-item>
+    <a-asset-item id="ring3Model" src="assets/ring_02.glb"></a-asset-item>
+  </a-assets>
+      <!-- CAMERA: clicks with mouse pointer -->
+      <a-entity camera
+        position="0 1.4 0"
+     cursor="rayOrigin: mouse"></a-entity>
+
+      <!-- LIGHTS -->
+      <a-entity light="type: ambient; intensity: 0.7; color: #ffffff"></a-entity>
+<a-entity light="type: directional; intensity: 1.5; color: #ffffff"
+          position="3 6 4"></a-entity>
+<a-entity light="type: point; intensity: 1.7; distance: 5; decay: 2"
+          position="0 2 -1"></a-entity>
+<a-entity light="type: point; intensity: 0.7; distance: 4; decay: 2"
+          position="-2 1 -4"></a-entity>
+      <!-- FLOOR + SKY -->
+      <a-plane rotation="-90 0 0" width="10" height="10" color="#050505"></a-plane>
+      <a-sky color="#111"></a-sky>
+<a-plane position="0 0.01 -3" rotation="-90 0 0" width="4" height="2" color="#000000" opacity="0.25"></a-plane>
+
+      <!-- ONE RING (torus) ON BOX -->
+      <a-box position="0 0.25 -3" depth="2" height="0.5" width="6" color="#333"></a-box>
+
+      <!-- RING: click = move out + scale up -->
+      <!-- LEFT RING -->
+<a-entity id="ring1"
+          gltf-model="#ring1Model"
+          position="-0.8 0.8 -3"
+          scale="0.1 0.1 0.1"
+          drag-rotate
+          ring-focus-multi
+           material="metalness: 1; roughness: 0.15; color: #ffffff"
+          animation__pos="property: position; startEvents: focusring; to: 0 2.2 -3; dur: 600; easing: easeOutCubic"
+          animation__pos_back="property: position; startEvents: unfocusring; to: -0.8 0.8 -3; dur: 500; easing: easeOutCubic"
+          animation__scale="property: scale; startEvents: focusring; to: 0.3 0.3 0.3; dur: 600; easing: easeOutCubic"
+          animation__scale_back="property: scale; startEvents: unfocusring; to: 0.1 0.1 0.1; dur: 500; easing: easeOutCubic">
+</a-entity>
+
+
+<!-- CENTER RING -->
+<a-entity id="ring2"
+          gltf-model="#ring2Model"
+          position="0 0.6 -3"
+          scale="0.4 0.4 0.4"
+          drag-rotate
+          ring-focus-multi
+                    material="metalness: 1; roughness: 0.2; color: #ffffff"
+
+          animation__pos="property: position; startEvents: focusring; to: 0 1.7 -3; dur: 600; easing: easeOutCubic"
+          animation__pos_back="property: position; startEvents: unfocusring; to: 0 0.6 -3; dur: 500; easing: easeOutCubic"
+          animation__scale="property: scale; startEvents: focusring; to: 0.9 0.9 0.9; dur: 600; easing: easeOutCubic"
+          animation__scale_back="property: scale; startEvents: unfocusring; to: 0.3 0.3 0.3; dur: 500; easing: easeOutCubic">
+</a-entity>
+
+
+<!-- RIGHT RING -->
+<a-entity id="ring3"
+          gltf-model="#ring3Model"
+          position="0.8 0.6 -3"
+          scale="0.02 0.02 0.02"
+          drag-rotate
+          ring-focus-multi
+                    material="metalness: 1; roughness: 0.15; color: #ffffff"
+
+          animation__pos="property: position; startEvents: focusring; to: 0 2.2 -3; dur: 600; easing: easeOutCubic"
+          animation__pos_back="property: position; startEvents: unfocusring; to: 0.8 0.6 -3; dur: 500; easing: easeOutCubic"
+          animation__scale="property: scale; startEvents: focusring; to: 0.1 0.1 0.1; dur: 600; easing: easeOutCubic"
+          animation__scale_back="property: scale; startEvents: unfocusring; to: 0.02 0.02 0.02; dur: 500; easing: easeOutCubic">
+</a-entity>
+
+
+      <!-- CLOSE BUTTON (starts hidden) -->
+      <a-entity id="closePanel" position="0 0.3 -1.8" visible="false">
+        <a-plane id="closeBtn"
+                 width="1.0"
+                 height="0.3"
+                 color="#b30000"
+                 close-ring-global
+                 text="value: Close; align: center; color: white; width:6">
+        </a-plane>
+      </a-entity>
+
+      <!-- SMALL INLINE SCRIPT JUST FOR EVENTS -->
+    <script>
+        let activeRing = null;
+        let busy = false;
+        AFRAME.registerComponent('ring-focus-multi', {
+  init: function () {
+    const ring = this.el;
+    const closePanel = document.querySelector('#closePanel');
+
+    ring.addEventListener('click', () => {
+      // if an animation is happening, ignore
+      if (busy) return;
+
+      // if another ring is already focused and this is different, ignore
+      if (activeRing && activeRing !== ring) return;
+
+      busy = true;
+      activeRing = ring;
+
+      // trigger animations defined in HTML
+      ring.emit('focusring');
+      closePanel.setAttribute('visible', true);
+
+      // wait until focus animation finished, then clear busy
+      ring.addEventListener(
+        'animationcomplete__pos',
+        () => { busy = false; },
+        { once: true }
+      );
+    });
+  }
+});
+AFRAME.registerComponent('close-ring-global', {
+  init: function () {
+    const btn = this.el;
+    const closePanel = document.querySelector('#closePanel');
+
+    btn.addEventListener('click', (evt) => {
+      evt.stopPropagation(); // avoid clicking background
+
+      if (!activeRing || busy) return;
+
+      busy = true;
+
+      // ask the active ring to go back
+      activeRing.emit('unfocusring');
+
+      // wait for the "back" animation to finish
+      activeRing.addEventListener(
+        'animationcomplete__pos_back',
+        () => {
+          busy = false;
+          activeRing = null;
+          closePanel.setAttribute('visible', false);
+        },
+        { once: true }
+      );
+    });
+  }
+});
+
+
+      AFRAME.registerComponent('drag-rotate', {
+  schema: {
+    speed:  { default: 0.4 }  // keep if you already added, fine
+  },
+
+  init: function () {
+    this.dragging = false;
+    this.prevX = 0;
+    this.prevY = 0;
+    this.rotationY = 0;
+    this.rotationX = 0;
+    this.active = false;   // 🔹 only true when ring is focused
+
+    const scene = this.el.sceneEl;
+    const canvas = scene.canvas;
+
+    // listen for focus/unfocus events from your other component
+    this.el.addEventListener('focusring', () => {
+      this.active = true;
+    });
+
+    this.el.addEventListener('unfocusring', () => {
+      this.active = false;
+      // optional: reset rotation when going back in box
+      this.rotationX = 0;
+      this.rotationY = 0;
+      this.el.object3D.rotation.set(0, 0, 0);
+    });
+
+    if (!canvas) {
+      scene.addEventListener('renderstart', () => this.addListeners());
+    } else {
+      this.addListeners();
+    }
+  },
+
+  addListeners: function () {
+    const canvas = this.el.sceneEl.canvas;
+
+    // ----- Mouse -----
+    this.onMouseDown = (e) => {
+      if (!this.active) return;      // 🔹 only if focused
+      this.dragging = true;
+      this.prevX = e.clientX;
+      this.prevY = e.clientY;
+    };
+
+    this.onMouseUp = () => {
+      this.dragging = false;
+    };
+
+    this.onMouseMove = (e) => {
+      if (!this.dragging || !this.active) return;
+      const dx = e.clientX - this.prevX;
+      const dy = e.clientY - this.prevY;
+      this.prevX = e.clientX;
+      this.prevY = e.clientY;
+
+      this.rotationY += dx * this.data.speed * 0.01;
+
+  
+
+      this.el.object3D.rotation.y = this.rotationY;
+
+    };
+
+    canvas.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('mousemove', this.onMouseMove);
+
+    // ----- Touch -----
+    this.onTouchStart = (e) => {
+      if (!this.active) return;      // 🔹 only if focused
+      this.dragging = true;
+      this.prevX = e.touches[0].clientX;
+      this.prevY = e.touches[0].clientY;
+    };
+
+    this.onTouchEnd = () => {
+      this.dragging = false;
+    };
+
+    this.onTouchMove = (e) => {
+      if (!this.dragging || !this.active) return;
+
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const dx = x - this.prevX;
+      const dy = y - this.prevY;
+      this.prevX = x;
+      this.prevY = y;
+
+      this.rotationY += dx * this.data.speed * 0.01;
+
+     
+      this.el.object3D.rotation.y = this.rotationY;
+      
+    };
+
+    canvas.addEventListener('touchstart', this.onTouchStart);
+    window.addEventListener('touchend', this.onTouchEnd);
+    window.addEventListener('touchmove', this.onTouchMove);
+  },
+
+  remove: function () {
+    const canvas = this.el.sceneEl && this.el.sceneEl.canvas;
+    if (!canvas) return;
+
+    canvas.removeEventListener('mousedown', this.onMouseDown);
+    window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
+
+    canvas.removeEventListener('touchstart', this.onTouchStart);
+    window.removeEventListener('touchend', this.onTouchEnd);
+    window.removeEventListener('touchmove', this.onTouchMove);
+  }
+});
+
+
+    
+      </script>
+    </a-scene>
+  </body>
+</html>
